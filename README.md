@@ -33,7 +33,7 @@ A nodejs server which listens for updates over zmq, bins them for the time they 
 ### setup
 ```
 sudo apt-get update
-sudo apt-get install nodejs npm
+sudo apt-get install nodejs npm nginx
 sudo ln -s "$(which nodejs)" /usr/bin/node
 sudo npm install --save express@4.10.2
 sudo npm install --save socket.io
@@ -42,6 +42,7 @@ sudo npm install forever -g
 ```
 ### start
 ```
+sudo service nginx start
 forever start centralDashServer.js
 ```
 

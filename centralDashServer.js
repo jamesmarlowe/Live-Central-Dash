@@ -1,5 +1,6 @@
 var app = require('express')();
 var http = require('http').Server(app);
+var io = require('socket.io')(http);
 var zmq = require('zmq');
 
 var cur_second = 0, cur_data = {};
@@ -30,7 +31,7 @@ responder.on("message", function(msg) {
 
 setInterval(function(){
     cur_second = Date.now()/1000|0;
-    cur_data[] = cur_second
+    cur_data["timestamp"] = cur_second;
     io.emit("data", JSON.stringify(cur_data));
     cur_data = {}
 }, update_interval);
