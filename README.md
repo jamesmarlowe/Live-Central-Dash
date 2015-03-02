@@ -20,6 +20,7 @@ sudo apt-get install nodejs npm
 sudo ln -s "$(which nodejs)" /usr/bin/node
 sudo npm install --save express@4.10.2
 sudo npm install --save zmq
+sudo npm install --save hiredis redis
 sudo npm install forever -g
 ```
 ### start
