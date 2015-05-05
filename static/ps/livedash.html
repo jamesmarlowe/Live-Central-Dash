@@ -39,9 +39,8 @@
             </div>
             <!-- /.row -->
             
-            <div id="dash-row" class="row">
-                <ul id="data-list">
-                </ul>
+            <div class="row">
+                <div id="container" style="height: 600px"></div>
             </div>
             
         </div>
@@ -52,13 +51,59 @@
 
     <script src="https://cdn.socket.io/socket.io-1.2.0.js"></script>
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+
     <script>
-    var socket = io('http://localhost:8080');
-    socket.on("data", function(data){
-        $( "#data-list" ).empty()
-        for (var key in JSON.parse(data)) {
-            $( "#data-list" ).append("<li>"+key+" : "+data[key]+"</li>");
+    var keymap = ["time"]
+    function build_series(keymap) {
+        var series = [];
+        for (var key in keymap) {
+            series.push({name:keymap[key],data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]});
         }
+        return series;
+    }
+    var chart = $('#container').highcharts({
+        chart: {
+            type: 'line',
+            zoomType: 'x',
+            panning: true,
+            panKey: 'shift'
+        },
+        subtitle: {
+            text: 'Click and drag to zoom in. Hold down shift key to pan.'
+        },
+        title: {text: 'Live System Statistics Per second'},
+        yAxis: {title: {text: 'Occurances Per second'}},
+        tooltip: {valueSuffix: ' per second'},
+        series: build_series(keymap)
+    });
+    var socket = io('http://52.4.105.66:8080');
+    var second = 0;
+    socket.on("data", function(data){
+        second++;
+        var jsondata = JSON.parse(data);
+        var addedkeys = []
+        chart = $('#container').highcharts();
+        for (var key in jsondata) {
+            if (key != "timestamp"){
+                if (keymap.indexOf(key)==-1){
+                    keymap.push(key);
+                    chart.addSeries({
+                        pointStart:second,
+                        name:key,
+                        data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                        visible:false
+                    });
+                } else {
+                    chart.series[keymap.indexOf(key)].addPoint(jsondata[key], false, true);
+                }
+                addedkeys.push(keymap.indexOf(key));
+            }
+        }
+        for (var key = 1; key < keymap.length; key++) {
+            if (addedkeys.indexOf(key)==-1&&keymap[key]!="timestamp") {chart.series[key].addPoint(0, false, true);}
+        }
+        chart.series[0].addPoint(0, true, true);
     });
     </script>
 
