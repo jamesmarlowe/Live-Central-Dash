@@ -13,38 +13,42 @@ var stat_data_options = {
   path: '/stat_data/'
 };
 
-// zmq client
-var requester = zmq.socket('req');
-requester.connect(central_server_connection_string);
-requester.on("message", function(reply) {});
+///// redis client /////
+var client = redis.createClient();
 
-// redis client
-var client = redis.createClient("/tmp/redis.sock");
+///// zmq client /////
+var producer = zmq.socket('push');
+producer.identity = 'upstream' + process.pid;
 
-// update server loop
-setInterval(function(){
-    cur_second = Date.now()/1000|0;
-    tmp = [];
-    // for redis based updates
-    client.hgetall(cur_second-1, function (err, obj) {
-        var data_object = {"timestamp":cur_second, "interval":update_interval, "data":JSON.stringify(obj)}
-        requester.send(JSON.stringify(data_object));
-    });
-    // for 'curl' based updates
-    /* 
-    http.get(stat_data_options, function(res) {
-        res.on('data', function(chunk) {
-            tmp.push chunk
+producer.bind(central_server_connection_string, function(err) {
+    if (err) throw err;
+    console.log('Bound!');
+    // update server loop
+    setInterval(function(){
+        cur_second = Date.now()/1000|0;
+        tmp = [];
+        ///// for redis based updates /////
+        client.hgetall(cur_second-1, function (err, obj) {
+            var data_object = {"timestamp":cur_second, "interval":update_interval, "data":JSON.stringify(obj)}
+            producer.send(JSON.stringify(data_object));
         });
-        res.on('end', function(e) {
-            var data_object = {"timestamp":cur_second, "interval":update_interval, "data":tmp.join('')}
-            requester.send(JSON.stringify(data_object));
-        });
-    })
-    */
-}, update_interval);
+        ///// for 'curl' based updates /////
+        /* 
+        http.get(stat_data_options, function(res) {
+            res.on('data', function(chunk) {
+                tmp.push chunk
+            });
+            res.on('end', function(e) {
+                var data_object = {"timestamp":cur_second, "interval":update_interval, "data":tmp.join('')}
+                producer.send(JSON.stringify(data_object));
+            });
+        })
+        */
+    }, update_interval);
+});
+producer.on("message", function(reply) {});
 
 // end zmq on quit
 process.on('SIGINT', function() {
-  requester.close();
+  producer.close();
 });
