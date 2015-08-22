@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en" style="height: 100%;padding: 15px; ">
 
 <head>
 
@@ -29,18 +29,14 @@
 
 </head>
 
-<body>
+<body style="height: 100%;">
 
-    <div id="wrapper">
+    <div id="wrapper" style="height: 100%;">
 
-        <div id="page-wrapper" >
-            <div class="row">
-                &nbsp;
-            </div>
-            <!-- /.row -->
+        <div id="page-wrapper" style="height: 100%;">
             
-            <div class="row">
-                <div id="container" style="height: 600px"></div>
+            <div class="row" style="height: 100%;">
+                <div id="container" style="height: 100%;"></div>
             </div>
             
         </div>
@@ -72,27 +68,30 @@
         subtitle: {
             text: 'Click and drag to zoom in. Hold down shift key to pan.'
         },
-        title: {text: 'Live System Statistics Per second'},
-        yAxis: {title: {text: 'Occurances Per second'}},
-        tooltip: {valueSuffix: ' per second'},
+                        title: {text: 'Live System Statistics Per second'},
+                        yAxis: {title: {text: 'Occurances Per second'}},
+                        tooltip: {valueSuffix: ' per second'},
         series: build_series(keymap)
     });
-    var socket = io('http://52.4.105.66:8080');
+    var socket = io('http://interface.ads4.mobi:8080');
     var second = 0;
     socket.on("data", function(data){
         second++;
+        $( "#data-list" ).empty();
         var jsondata = JSON.parse(data);
         var addedkeys = []
-        chart = $('#container').highcharts();
+
+            chart = $('#container').highcharts();
+
         for (var key in jsondata) {
             if (key != "timestamp"){
                 if (keymap.indexOf(key)==-1){
                     keymap.push(key);
                     chart.addSeries({
-                        pointStart:second,
-                        name:key,
-                        data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                        visible:false
+                      pointStart:second,
+                      name:key,
+                      data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+                      visible:false
                     });
                 } else {
                     chart.series[keymap.indexOf(key)].addPoint(jsondata[key], false, true);
@@ -106,6 +105,7 @@
         chart.series[0].addPoint(0, true, true);
     });
     </script>
+
 
 </body>
 

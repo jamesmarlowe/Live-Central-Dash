@@ -7,4 +7,4 @@ sudo nginx -s stop -p `pwd`
 sudo nginx -c conf/nginx$1.conf -p `pwd`
 
 echo "restarting node"
-forever restart centralDashServer.js
+forever restart centralDashServer.js || forever start centralDashServer.js

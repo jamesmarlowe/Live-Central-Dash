@@ -6,7 +6,7 @@ var redis = require("redis");
 
 var cur_second = 0, cur_data = {}, percents = [];
 var update_interval = 1000;
-var central_server_connection_string = "tcp://*:5555";
+var central_server_connection_string = "tcp://*:5558";
 
 ///// redis client /////
 var client = null;
@@ -23,7 +23,7 @@ app.get('/health/', function(req, res){
 
 app.get('/csv/', function(req, res){
     if (client){
-        client.eval("local time=redis.call(\"TIME\")[1] local stats = {} for i=0,ARGV[1]-1 do     local current = redis.call(\"hgetall\",time-i)     for _, key in pairs(current) do         local sm = redis.call(\"hget\",time-i,key)         stats[key] = (stats[key] or 0) + (sm or 0)     end end local aggregate = {} for k,v in pairs(stats) do     if (not tonumber(k)) then table.insert(aggregate, k..\" : \"..v) end end return aggregate 0 1", 0, function (err, resp) {
+        client.eval("local time=redis.call(\"TIME\")[1] local stats = {} for i=0,ARGV[1]-1 do     local current = redis.call(\"hgetall\",time-i)     for _, key in pairs(current) do         local sm = redis.call(\"hget\",time-i,key)         stats[key] = (stats[key] or 0) + (sm or 0)     end end local aggregate = {} for k,v in pairs(stats) do     if (not tonumber(k)) then table.insert(aggregate, k..\" : \"..v) end end return aggregate", 0, req.query.seconds?req.query.seconds:1, function (err, resp) {
             console.dir(err);
             res.send(resp);
         });
@@ -33,29 +33,29 @@ app.get('/csv/', function(req, res){
     }
 });
 
-var consumer = zmq.socket('pull');
-consumer.identity = 'downstream' + process.pid;
-consumer.connect(central_server_connection_string);
-
-socket.on('message',  function(err) {
+var responder = zmq.socket('rep');
+responder.bind(central_server_connection_string, function(err) {
     if (err) throw err;
-    console.log('Connected!');
-    consumer.send("1");
-    console.log(msg.toString());
-    var tmp = JSON.parse(msg.toString());
-    if (tmp["timestamp"] < cur_second && tmp["timestamp"] > cur_second - update_interval) {
-        var tmpdata = JSON.parse(tmp["data"]);
-        for (var key in tmpdata) {
-            if (key.indexOf(" filled") > -1){
-                percents.push(key)
-            }
-            if (key in cur_data){
-                cur_data[key] += tmpdata[key];
-            } else {
-                cur_data[key] = tmpdata[key];
+    console.log('bound!');
+
+    responder.on('message', function(msg) {
+        responder.send("1");
+        console.log(msg.toString());
+        var tmp = JSON.parse(msg.toString());
+        if (true){//(tmp["timestamp"] < cur_second && tmp["timestamp"] > cur_second - update_interval) {
+            var tmpdata = JSON.parse(tmp["data"]);
+            for (var key in tmpdata) {
+                if (key.indexOf(" filled") > -1){
+                    percents.push(key)
+                }
+                if (key in cur_data){
+                    cur_data[key] += Number(tmpdata[key]);
+                } else {
+                    cur_data[key] = Number(tmpdata[key]);
+                }
             }
         }
-    }
+    });
 });
 
 setInterval(function(){
@@ -86,6 +86,10 @@ setInterval(function(){
     cur_data = {};
     percents = [];
 }, update_interval);
+
+io.on('connection', function (socket) {
+  console.log("connection");
+});
 
 http.listen(8080, function(){
   console.log('listening on *:8080');
