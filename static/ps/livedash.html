@@ -50,6 +50,33 @@
     <script src="http://code.highcharts.com/highcharts.js"></script>
 
     <script>
+    function getURLParam(key,target){
+        var values = [];
+        if(!target){
+            target = location.href;
+        }
+
+		key = key.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+        
+        var pattern = key + '=([^&#]+)';
+        var o_reg = new RegExp(pattern,'ig');
+		while(true){
+			var matches = o_reg.exec(target);
+			if(matches && matches[1]){
+				values.push(matches[1]);
+			}
+			else{
+				break;
+			}
+		}
+        if(!values.length){
+             return null;   
+        }
+        else{
+            return values.length == 1 ? values[0] : values;
+        }
+    }
+    
     var keymap = ["time"]
     function build_series(keymap) {
         var series = [];
@@ -86,12 +113,13 @@
         for (var key in jsondata) {
             if (key != "timestamp"){
                 if (keymap.indexOf(key)==-1){
+                    var params = getURLParam('metrics[]');
                     keymap.push(key);
                     chart.addSeries({
                       pointStart:second,
                       name:key,
                       data: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
-                      visible:false
+                      visible:$.inArray(encodeURIComponent(key), params) > -1
                     });
                 } else {
                     chart.series[keymap.indexOf(key)].addPoint(jsondata[key], false, true);

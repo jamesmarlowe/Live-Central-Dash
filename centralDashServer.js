@@ -11,7 +11,7 @@ var central_server_connection_string = "tcp://*:5558";
 ///// redis client /////
 var client = null;
 try {
-    client = redis.createClient();
+    //client = redis.createClient();
 } catch(e) {
     console.log(e);
 }
@@ -96,5 +96,5 @@ http.listen(8080, function(){
 });
 
 process.on('SIGINT', function() {
-  consumer.close();
+  responder.close();
 });
